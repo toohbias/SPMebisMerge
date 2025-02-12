@@ -80,6 +80,7 @@ public class Schuelerportal {
         connection.setUrl(apiUrl + "/api/" + name);
         connection.addRequestHeader("X-XSRF-TOKEN", cookies[0].substring(0, 339) + "=");
         NetworkManager.getInstance().addToQueueAndWait(connection);
+        System.out.println(connection.getResponseCode() + " - " + connection.getUrl());
         return new String(connection.getResponseData());
     }
     

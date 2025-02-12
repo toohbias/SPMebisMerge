@@ -3,6 +3,8 @@ package com.hgvmerge.spmebis;
 import ca.weblite.codename1.json.JSONArray;
 import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
+import com.codename1.io.Cookie;
+import com.codename1.ui.CN;
 import java.util.ArrayList;
 
 public class Backend {
@@ -16,9 +18,11 @@ public class Backend {
     private long lastUsed;
     
     private Backend() {
-        database = new DB();
+        CN.updateNetworkThreadCount(2);
+        Cookie.clearCookiesFromStorage();
         String[] sp = StorageManager.loadCredentials(StorageManager.SCHUELERPORTAL);
         String[] mdl = StorageManager.loadCredentials(StorageManager.MEBIS);
+        database = new DB();
         schuelerportal = new Schuelerportal(sp[0], sp[1]);
         mebis = new Mebis(mdl[0], mdl[1]);
         
@@ -41,6 +45,7 @@ public class Backend {
                 int id = chat.getInt("id");
                 if(!chatIDsDB.contains(id)) {
                     addChat(chat);
+                } else if(chat.isNull("latestMessage")) {
                 } else if(/* latestMessage timestamp > last stored timestamp */ chat.getJSONObject("latestMessage").getLong("timestamp") > database.getLongValue("SELECT lastmessagedate FROM Chat WHERE ID = " + id)) {
                     updateChat(new JSONObject(schuelerportal.getRequest("chat/" + id)));
                 }
@@ -55,6 +60,7 @@ public class Backend {
             JSONArray messages = obj.getJSONArray("messages");
             String id = obj.getString("id");
             long  lastMessageTimestamp = database.getLongValue("SELECT lastmessagedate FROM Chat WHERE ID = " + id);
+            System.out.println(messages.length());
             for(int i = messages.length() - 1; i >= 0; i-- /* last messages read first */) {
                 JSONObject message = messages.getJSONObject(i);
                 if(message.getLong("createdAt") > lastMessageTimestamp) {
@@ -88,7 +94,7 @@ public class Backend {
                                              "\"" + chat.getString("name") + "\"",                          /* name         */
                                              "\"" + chat.getJSONObject("owner").getString("name") + "\"",   /* owner        */
                                              chat.getString("createdAt"),                                   /* scholyear    */    
-                                             chat.getJSONObject("latestMessage").getString("timestamp"));   /* lastmessage  */  
+                                             "0");      /* updated in updateChat()  */                      /* lastmessage  */  
             
             updateChat(new JSONObject(schuelerportal.getRequest("chat/" + chat.getString("id"))));
         } catch(JSONException ex) {

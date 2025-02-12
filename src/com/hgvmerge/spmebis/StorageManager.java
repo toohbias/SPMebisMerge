@@ -11,11 +11,15 @@ public class StorageManager {
     private static final String LAST_USED = "LU";
     
     public static void saveCredentials(String key, String value, String use) {
-        EncryptedStorage.getInstance().writeObject(use, new String[] {key, value});
+        EncryptedStorage.getInstance().writeObject(use + "_K", key);
+        EncryptedStorage.getInstance().writeObject(use + "_V", value);
     }
     
-    public static String[] loadCredentials(String key) {
-        return (String[]) EncryptedStorage.getInstance().readObject(key);
+    public static String[] loadCredentials(String use) {
+        String[] credentials = new String[2];
+        credentials[0] = (String) EncryptedStorage.getInstance().readObject(use + "_K");
+        credentials[1] = (String) EncryptedStorage.getInstance().readObject(use + "_V");
+        return credentials;
     }
     
     //TODO: on app close

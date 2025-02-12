@@ -14,7 +14,6 @@ import java.util.ArrayList;
 
 public class DB {
     
-    private Database database;
     private final String name = "DATA.db";
     
     public static final String TYPE_INTEGER = "integer";
@@ -35,51 +34,57 @@ public class DB {
     
     
     public DB() {
+        Database db = null;
         try {
-            boolean exists = Database.exists(name);
-            database = Display.getInstance().openOrCreate(name);
-            if(!exists) {
+            if(!Database.exists(name)) {
+                db = Database.openOrCreate(name);
                 for(String table : createTables) {
-                    database.execute(table);
+                    db.execute(table);
                 }
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
         }        
     }
     
     public void addEntry(String table, String... columns) {
+       Database db = null;
         try {
+            db = Database.openOrCreate(name);
             String values = "";
             for(String col : columns) {
                 values += ",";
                 values += col;
             }
             values = values.substring(1);
-            database.execute("INSERT INTO " + table + " VALUES(" + values + ")");
+            db.execute("INSERT INTO " + table + " VALUES(" + values + ")");
         } catch(IOException ex) {
             ex.printStackTrace();
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
         }
     }
     
     public void updateEntry(String table, String primaryID, String column, String value) {
+        Database db = null;
         try {
-            database.execute("UPDATE " + table + " SET " + column + " = " + value + " WHERE ID = " + primaryID);
+            db = Database.openOrCreate(name);
+            db.execute("UPDATE " + table + " SET " + column + " = " + value + " WHERE ID = " + primaryID);
         } catch(IOException ex) {
             ex.printStackTrace();
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
         }
     }
     
     public <T> ArrayList<T> getSingleFieldFromPrompt(String query, String type) {
+        Database db = null;
         Cursor cursor = null;
         try {
-            cursor = database.executeQuery(query);
+            db = Database.openOrCreate(name);
+            cursor = db.executeQuery(query);
             
             ArrayList result;
             switch(type) {
@@ -108,15 +113,17 @@ public class DB {
             ex.printStackTrace();
             return null;
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
             Util.cleanup(cursor);
         }
     }
     
     public Integer getIntValue(String query) {
+        Database db = null;
         Cursor cursor = null;
         try {
-            cursor = database.executeQuery(query);
+            db = Database.openOrCreate(name);
+            cursor = db.executeQuery(query);
             if(cursor.next()) {
                 return cursor.getRow().getInteger(0);
             }
@@ -125,15 +132,17 @@ public class DB {
             ex.printStackTrace();
             return null;
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
             Util.cleanup(cursor);
         }
     }
     
     public Long getLongValue(String query) {
+        Database db = null;
         Cursor cursor = null;
         try {
-            cursor = database.executeQuery(query);
+            db = Database.openOrCreate(name);
+            cursor = db.executeQuery(query);
             if(cursor.next()) {
                 return cursor.getRow().getLong(0);
             }
@@ -142,7 +151,7 @@ public class DB {
             ex.printStackTrace();
             return null;
         } finally {
-            Util.cleanup(database);
+            Util.cleanup(db);
             Util.cleanup(cursor);
         }
     }

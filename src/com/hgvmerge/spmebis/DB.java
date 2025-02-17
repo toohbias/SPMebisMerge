@@ -4,13 +4,8 @@ import com.codename1.db.Cursor;
 import com.codename1.db.Database;
 import com.codename1.db.Row;
 import com.codename1.io.Util;
-//import com.codename1.ui.CN;
-import com.codename1.ui.Display;
-//import com.sun.org.apache.bcel.internal.generic.Select;
 import java.io.IOException;
 import java.util.ArrayList;
-//import java.io.InputStream;
-//import java.io.OutputStream;
 
 public class DB {
     
@@ -31,6 +26,8 @@ public class DB {
     public static final String TABLE_COURSE = "Course";
     public static final String TABLE_SECTION = "Section";
     public static final String TABLE_MODULE = "Module";
+    
+    public static final String NULL = "NULL";
     
     
     public DB() {
@@ -102,7 +99,7 @@ public class DB {
                     case TYPE_INTEGER: result.add(current.getInteger(0)); break;
                     case TYPE_LONG: result.add(current.getLong(0)); break;
                     case TYPE_REAL: result.add(current.getDouble(0)); break;
-                    case TYPE_TEXT: result.add(current.getString(0)); break;
+                    case TYPE_TEXT: result.add(Util.decode(current.getString(0), "UTF-8", true)); break;
                     case TYPE_BLOB: result.add(current.getBlob(0)); break;
                     default: return null;
                 }
@@ -154,6 +151,24 @@ public class DB {
             Util.cleanup(db);
             Util.cleanup(cursor);
         }
+    }
+    
+    public boolean exists(String table, String primaryID) {
+        Database db = null;
+        Cursor cursor = null;
+        try {
+            db = Database.openOrCreate("SELECT 1 FROM " + table + " WHERE ID = " + primaryID + " LIMIT 1");
+            cursor = db.executeQuery("");
+            if(cursor.next()) {
+                return true;
+            }
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            Util.cleanup(db);
+            Util.cleanup(cursor);
+        }
+        return false;
     }
   
     private final String[] createTables = {"CREATE TABLE Message(ID INTEGER NOT NULL PRIMARY KEY, message TEXT, creator TEXT, date INTEGER, chatID INTEGER NOT NULL, fileID INTEGER, FOREIGN KEY(chatID) REFERENCES Chat(ID), FOREIGN KEY(fileID) REFERENCES File(ID));",

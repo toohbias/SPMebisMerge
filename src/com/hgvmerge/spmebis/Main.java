@@ -4,6 +4,7 @@ public class Main {
 
     public void init(Object context) {
         Backend.getInstance().updateChats();
+        Backend.getInstance().updateUnterrichtAndHausaufgaben();
     }
     
     public void start() {

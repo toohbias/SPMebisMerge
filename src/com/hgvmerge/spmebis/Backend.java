@@ -5,10 +5,8 @@ import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
 import com.codename1.io.Cookie;
 import com.codename1.io.Util;
-import com.codename1.l10n.SimpleDateFormat;
 import com.codename1.ui.CN;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -20,8 +18,7 @@ public class Backend {
     private final Mebis mebis;
     private final DB database;
     
-    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    private final Calendar lastUsed;   
+    private final Time lastUsed;   
     private final HashSet<String> schoolFreeDays;
     
     private Backend() {
@@ -33,8 +30,8 @@ public class Backend {
         schuelerportal = new Schuelerportal(sp[0], sp[1]);
         mebis = new Mebis(mdl[0], mdl[1]);
         
-        lastUsed = Calendar.getInstance();
-//        lastUsed.setTime(new Date(StorageManager.loadLastUsed()));
+        lastUsed = new Time().now();
+//        lastUsed = new Time(StorageManager.loadLastUsed());
         
         schoolFreeDays = Holidays.getSchoolFreeDays(StorageManager.loadHolidays());
     }
@@ -147,15 +144,14 @@ public class Backend {
     }
     
     public void updateUnterrichtAndHausaufgaben() {
-        Calendar calIt = Calendar.getInstance();
-        while(calIt.after(lastUsed)) {
-            String date = sdf.format(calIt.getTime());
-            if(!(calIt.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || calIt.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || schoolFreeDays.contains(date))) {
-                updateUnterricht(date);
+        Time timeIt = new Time().now();
+        while(timeIt.compare("after", lastUsed)) {
+            if(!(timeIt.isWeekend() || schoolFreeDays.contains(timeIt.format()))) {
+                updateUnterricht(timeIt.format());
             }
-            calIt.add(Calendar.SECOND, -60 * 60 * 24);
+            timeIt.add(Time.DAYS, -1);
         }
-        updateHausaufgaben();
+        updateRecentHausaufgaben();
     }
     
     private void updateUnterricht(String date) {
@@ -197,7 +193,7 @@ public class Backend {
     }
     
     //TODO: submissions/back (also in DB)
-    private void updateHausaufgaben() {
+    private void updateRecentHausaufgaben() {
         try {
             JSONArray hausaufgaben = new JSONArray(schuelerportal.getRequest("hausaufgaben"));
             for(int i = 0; i < hausaufgaben.length(); i++) {

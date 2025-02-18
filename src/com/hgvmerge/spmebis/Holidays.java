@@ -6,18 +6,15 @@ import ca.weblite.codename1.json.JSONObject;
 import com.codename1.io.ConnectionRequest;
 import com.codename1.io.NetworkManager;
 import com.codename1.l10n.ParseException;
-import com.codename1.l10n.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashSet;
 
 public class Holidays {
     
     // year the school year started in
     public static int getSchoolYear() {
-        Calendar cal = Calendar.getInstance();
-        int year = cal.get(Calendar.YEAR);
-        return cal.get(Calendar.MONTH) < 9 ? year - 1 : year;
+        Time time = new Time().now();
+        int year = (int) time.get(Time.YEARS);
+        return time.get(Time.MONTHS) < 9 ? year - 1 : year;
     }
     
     public static JSONObject downloadHolidays() {
@@ -30,8 +27,7 @@ public class Holidays {
             
             int holidayIndex = 0;
             
-            Date start, end;
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Time start, end;
             
             con.setUrl("https://openholidaysapi.org/SchoolHolidays?countryIsoCode=DE&subdivisionCode=DE-BY&languageIsoCode=DE&validFrom=" + year + "-09-01&validTo=" + (year + 1) + "-8-31");        
             NetworkManager.getInstance().addToQueueAndWait(con);
@@ -39,12 +35,12 @@ public class Holidays {
             JSONArray arrSchool = new JSONArray(new String(con.getResponseData()));
             for(int i = 0; i < arrSchool.length(); i++) {
                 JSONObject obj = arrSchool.getJSONObject(i);
-                start = sdf.parse(obj.getString("startDate"));
-                end = sdf.parse(obj.getString("endDate"));
+                start = new Time(obj.getString("startDate"));
+                end = new Time(obj.getString("endDate"));
                 int holidayStart = holidayIndex;
-                while(start.getTime() <= end.getTime()) {
-                    vacations.accumulate("holidays", sdf.format(start));
-                    start.setTime(start.getTime() + (1000 * 60 * 60 * 24));
+                while(start.compare("before/equals", end)) {
+                    vacations.accumulate("holidays", start.format());
+                    start.add(Time.DAYS, 1);
                     holidayIndex++;
                 }
                 vacations.accumulate("fromTo", new JSONObject("{\"" + obj.getJSONArray("name").getJSONObject(0).getString("text") + "\":{\"fromIndex\":" + holidayStart + ",\"toIndex\":" + (holidayIndex - 1) + "}}"));
@@ -65,7 +61,7 @@ public class Holidays {
             
             System.out.println("success");
             return vacations;
-        } catch (JSONException | ParseException ex) {
+        } catch (JSONException ex) {
             ex.printStackTrace();
             System.out.println("failed");
             return null;

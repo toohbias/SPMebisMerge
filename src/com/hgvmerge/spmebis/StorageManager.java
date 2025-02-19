@@ -2,7 +2,6 @@ package com.hgvmerge.spmebis;
 
 import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
-import com.codename1.crypto.EncryptedStorage;
 import com.codename1.io.Preferences;
 import com.codename1.io.Storage;
 
@@ -14,35 +13,30 @@ public class StorageManager {
     private static final String HOLIDAYS = "HD";
     
     public static void saveCredentials(String key, String value, String use) {
-        boolean k = EncryptedStorage.getInstance().writeObject(use + "_K", key);
-        boolean v = EncryptedStorage.getInstance().writeObject(use + "_V", value);
-        System.out.print("saveCredentials ");
-        if(k && v) { System.out.println("success"); } else { System.out.println("failed"); }
+        Preferences.set(use + "K", key);
+        Preferences.set(use + "V", value);
+        System.out.println("saveCredentials success");
     }
     
     public static String[] loadCredentials(String use) {
-        String[] credentials = new String[2];
-        credentials[0] = (String) EncryptedStorage.getInstance().readObject(use + "_K");
-        credentials[1] = (String) EncryptedStorage.getInstance().readObject(use + "_V");
-        boolean k = credentials[0] != null;
-        boolean v = credentials[1] != null;
+        String[] result = { Preferences.get(use + "K", ""), Preferences.get(use + "V", "") };
         System.out.print("loadCredentials ");
-        if(k && v) { System.out.println("success"); } else { System.out.println("failed"); }
-        return credentials;
+        if(result[0].length() != 0 && result[1].length() != 0) { System.out.println("success"); } else { System.out.println("failed"); }
+        return result;
     }
     
     //TODO: on app close
-    public static void saveLastUsed(long last) {
-        Preferences.set(LAST_USED, last);
+    public static void saveLastUsed(Time last) {
+        Preferences.set(LAST_USED, last.getMillis());
         System.out.println("saveLastUsed success");
     }
     
     //TODO: on app start
-    public static long loadLastUsed() {
-        int lu = Preferences.get(LAST_USED, 0);
+    public static Time loadLastUsed(Time defaultvalue) {
+        long lu = Preferences.get(LAST_USED, 0);
         System.out.print("loadLastUsed ");
-        if(lu != 0) { System.out.println("success"); } else { System.out.println("failure"); }
-        return lu;
+        if(lu != 0) { System.out.println("success"); } else { System.out.println("failed: using default time " + defaultvalue.format()); return defaultvalue; }
+        return new Time(lu);
     }
     
     public static void saveHolidays(JSONObject holidays) {

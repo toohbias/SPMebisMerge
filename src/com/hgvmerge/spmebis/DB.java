@@ -58,7 +58,7 @@ public class DB {
             values = values.substring(1);
             db.execute("INSERT INTO " + table + " VALUES(" + values + ")");
         } catch(IOException ex) {
-            ex.printStackTrace();
+            System.err.println("couldnt add entry " + columns[0] + " to table " + table + ": primary key already used");
         } finally {
             Util.cleanup(db);
         }
@@ -79,19 +79,19 @@ public class DB {
     public <T> ArrayList<T> getSingleFieldFromPrompt(String query, String type) {
         Database db = null;
         Cursor cursor = null;
+        ArrayList result;
+        switch(type) {
+            case TYPE_INTEGER: result = new ArrayList<Integer>(); break;
+            case TYPE_LONG: result = new ArrayList<Long>(); break;
+            case TYPE_REAL: result = new ArrayList<Double>(); break;
+            case TYPE_TEXT: result = new ArrayList<String>(); break;
+            case TYPE_BLOB: result = new ArrayList<Byte[]>(); break;
+            default: return new ArrayList<>();
+        }
         try {
             db = Database.openOrCreate(name);
             cursor = db.executeQuery(query);
-            
-            ArrayList result;
-            switch(type) {
-                case TYPE_INTEGER: result = new ArrayList<Integer>(); break;
-                case TYPE_LONG: result = new ArrayList<Long>(); break;
-                case TYPE_REAL: result = new ArrayList<Double>(); break;
-                case TYPE_TEXT: result = new ArrayList<String>(); break;
-                case TYPE_BLOB: result = new ArrayList<Byte[]>(); break;
-                default: return null;
-            }
+
             boolean next = cursor.next();
             while(next) {
                 Row current = cursor.getRow();
@@ -108,59 +108,60 @@ public class DB {
             return result;
         } catch(IOException ex) {
             ex.printStackTrace();
-            return null;
         } finally {
             Util.cleanup(db);
             Util.cleanup(cursor);
         }
+        return result;
     }
     
-    public Integer getIntValue(String query) {
+    public int getIntValue(String query) {
         Database db = null;
         Cursor cursor = null;
+        int value = -1;
         try {
             db = Database.openOrCreate(name);
             cursor = db.executeQuery(query);
             if(cursor.next()) {
-                return cursor.getRow().getInteger(0);
+                value = cursor.getRow().getInteger(0);
             }
-            return null;
         } catch(IOException ex) {
             ex.printStackTrace();
-            return null;
         } finally {
             Util.cleanup(db);
             Util.cleanup(cursor);
         }
+        return value;
     }
     
-    public Long getLongValue(String query) {
+    public long getLongValue(String query) {
         Database db = null;
         Cursor cursor = null;
+        long value = -1;
         try {
             db = Database.openOrCreate(name);
             cursor = db.executeQuery(query);
             if(cursor.next()) {
-                return cursor.getRow().getLong(0);
+                value = cursor.getRow().getLong(0);
             }
-            return null;
         } catch(IOException ex) {
             ex.printStackTrace();
-            return null;
         } finally {
             Util.cleanup(db);
             Util.cleanup(cursor);
         }
+        return value;
     }
     
     public boolean exists(String table, String primaryID) {
         Database db = null;
         Cursor cursor = null;
+        boolean exists = false;
         try {
-            db = Database.openOrCreate("SELECT 1 FROM " + table + " WHERE ID = " + primaryID + " LIMIT 1");
-            cursor = db.executeQuery("");
+            db = Database.openOrCreate(name);
+            cursor = db.executeQuery("SELECT 1 FROM " + table + " WHERE ID = " + primaryID + " LIMIT 1");
             if(cursor.next()) {
-                return true;
+                exists = true;
             }
         } catch(IOException ex) {
             ex.printStackTrace();
@@ -168,7 +169,7 @@ public class DB {
             Util.cleanup(db);
             Util.cleanup(cursor);
         }
-        return false;
+        return exists;
     }
   
     private final String[] createTables = {"CREATE TABLE Message(ID INTEGER NOT NULL PRIMARY KEY, message TEXT, creator TEXT, date INTEGER, chatID INTEGER NOT NULL, fileID INTEGER, FOREIGN KEY(chatID) REFERENCES Chat(ID), FOREIGN KEY(fileID) REFERENCES File(ID));",

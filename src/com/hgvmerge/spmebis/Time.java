@@ -68,12 +68,12 @@ public class Time {
         switch(field) {
             case MONTHS:
                 cal.setTime(date);
-                cal.roll(Calendar.MONTH, value);
+                cal.add(Calendar.MONTH, value);
                 date.setTime(cal.getTime().getTime());
                 break;
             case YEARS:
                 cal.setTime(date);
-                cal.roll(Calendar.YEAR, value);
+                cal.add(Calendar.YEAR, value);
                 date.setTime(cal.getTime().getTime());
                 break;
             default:

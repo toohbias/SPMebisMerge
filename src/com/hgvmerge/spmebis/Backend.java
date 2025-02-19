@@ -30,8 +30,7 @@ public class Backend {
         schuelerportal = new Schuelerportal(sp[0], sp[1]);
         mebis = new Mebis(mdl[0], mdl[1]);
         
-        lastUsed = new Time().now();
-//        lastUsed = new Time(StorageManager.loadLastUsed());
+        lastUsed = StorageManager.loadLastUsed(new Time().now().add(Time.DAYS, -7));
         
         schoolFreeDays = Holidays.getSchoolFreeDays(StorageManager.loadHolidays());
     }
@@ -152,6 +151,7 @@ public class Backend {
             timeIt.add(Time.DAYS, -1);
         }
         updateRecentHausaufgaben();
+        updatePastHausaufgaben();
     }
     
     private void updateUnterricht(String date) {
@@ -210,6 +210,38 @@ public class Backend {
                                                             "-1");                                                                      /* unterrichtID */
                 } else {
                     database.updateEntry(DB.TABLE_HAUSAUFGABE, hausaufgabe.getString("id"), "completed", hausaufgabe.getBoolean("completed") ? "1" : "0");
+                }
+            }
+        } catch (JSONException ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    public void updatePastHausaufgaben() {
+        try {
+            final String url = "hausaufgaben/past/sorted/";
+            int page = 0;
+            JSONObject response = new JSONObject(schuelerportal.getRequest(url + page));
+            int lastpage = response.getJSONObject("pagination").getInt("last_page");
+            JSONArray hausaufgaben;
+            if(database.exists(DB.TABLE_HAUSAUFGABE,response.getJSONArray("data").getJSONObject(0).getString("id"))) { //no new Hausaufgabe
+                return;
+            }
+            for(; page <= lastpage; page++) {
+                hausaufgaben = new JSONObject(schuelerportal.getRequest(url + page)).getJSONArray("data");
+                for(int i = 0; i < hausaufgaben.length(); i++) {
+                    JSONObject hausaufgabe = hausaufgaben.getJSONObject(i);
+                    if(lastUsed.compare("before/equals", new Time(hausaufgabe.getString("date")))) { return; }
+                    if(database.exists(DB.TABLE_HAUSAUFGABE, hausaufgabe.getString("id"))) { return; }
+                    database.addEntry(DB.TABLE_HAUSAUFGABE, hausaufgabe.getString("id"),                                                /* ID           */
+                                                            formatString(hausaufgabe.getJSONObject("subject").getString("long"), true), /* class        */  /* encoded */
+                                                            formatString(hausaufgabe.getString("homework"), true),                      /* message      */  /* encoded */
+                                                            formatString(hausaufgabe.getString("teacher"), true),                       /* teacher      */  /* encoded */
+                                                            formatString(hausaufgabe.getString("date"), false),                         /* date         */
+                                                            formatString(hausaufgabe.getString("due_at"), false),                       /* due          */
+                                                            buildFilesString(hausaufgabe.getJSONArray("files")),                        /* files        */
+                                                            hausaufgabe.getBoolean("completed") ? "1" : "0",                            /* completed    */
+                                                            "-1");                                                                      /* unterrichtID */
                 }
             }
         } catch (JSONException ex) {
